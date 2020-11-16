@@ -138,3 +138,7 @@ Percentage of the requests served within a certain time (ms)
 ## worker bad stability
 
 while the `fiboN` in `index.js` getting bigger and bigger, worker became slower to respond, once the listeners amount go over limiter `setMaxListeners(1000)`, the worker crash without error.
+
+## info
+
+init code based on https://github.com/tugayilik/node-worker-threads
