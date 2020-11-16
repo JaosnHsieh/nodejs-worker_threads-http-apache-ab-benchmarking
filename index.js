@@ -1,28 +1,46 @@
 const { Worker } = require('worker_threads');
 const http = require('http');
+const { fibo } = require('./fibo');
+const HTTP_PORT = 3333;
+const fiboN = 30;
 
+const workers = Array.from({ length: 4 })
+  .fill(null)
+  .map((_) => getNewWorker());
+  
+let count = 0;
+
+function getNewWorker() {
+  return new Worker('./worker.js').setMaxListeners(1000);
+}
 const requestListener = (req, res) => {
-    switch (req.url) {
-        case '/':
-            const workerData = {
-                write: { fileName: 'write.txt', filePath: './' },
-                read: { fileName: 'read.json', filePath: './' },
-                hash: Math.random(),
-            };
+  switch (req.url) {
+    case '/worker':
+      ++count;
+      if (count > 10000) {
+        count = 0;
+      }
+      let currentWorker = workers[count % 4];
 
-            new Worker('./worker.js', { workerData });
+      const listener = (value) => {
+        res.write(`${value}`);
+        res.end();
+        currentWorker.removeListener('message', listener);
+      };
+      currentWorker.on('message', listener);
+      currentWorker.postMessage(fiboN);
 
-            res.writeHead(200).end('OK');
-            break;
-        default:
-            res.writeHead(404).end('NOK');
-            break;
+      break;
+    default: {
+      const value = fibo(fiboN);
+      res.write(`${value}`);
+      res.end();
     }
-
+  }
 };
 
 const server = http.createServer(requestListener);
 
-server.listen(3333, () => {
-    console.log('Server listening on: 127.0.0.1:3333');
+server.listen(HTTP_PORT, () => {
+  console.log(`Server listening on: ${HTTP_PORT}`);
 });
